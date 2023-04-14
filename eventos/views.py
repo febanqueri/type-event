@@ -41,7 +41,8 @@ def novo_evento(request):
 
         messages.add_message(request, constants.SUCCESS, 'Evento cadastrado com sucesso.')
         return redirect(reverse('novo_evento'))
-    
+
+@login_required
 def gerenciar_evento(request):
     if request.method =="GET":
         nome = request.GET.get('nome')
@@ -51,9 +52,18 @@ def gerenciar_evento(request):
             eventos = eventos.filter(nome__contains=nome)
 
         return render(request, 'gerenciar_evento.html', {'eventos':eventos})
-    
+
+@login_required
 def inscrever_evento(request, id):
-		# Validar login
+	# Validar login
     evento = get_object_or_404(Evento, id=id)
     if request.method == "GET":
         return render(request, 'inscrever_evento.html', {'evento': evento})
+    elif request.method =="POST":
+        #Validar se o usuário ja é um participante
+        evento.participantes.add(request.user)
+        evento.save()
+
+        messages.add_message(request, constants.SUCCESS, 'Inscrição realizada com sucesso!')
+
+        return redirect(f'/eventos/inscrever_evento/{id}/')
