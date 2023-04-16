@@ -1,16 +1,20 @@
-from django.shortcuts import render,redirect, get_object_or_404
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
-from .models import Evento, Certificado
-from django.urls import reverse
-from django.contrib import messages
-from django.contrib.messages import constants
-from django.http import Http404
-import csv
-from secrets import token_urlsafe
-import os
 from django.conf import settings
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.messages import constants
+from django.http import HttpResponse
+from django.http import Http404
+from django.shortcuts import render,redirect, get_object_or_404
+from django.urls import reverse
+from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
+from secrets import token_urlsafe
+from .models import Evento, Certificado
+
+import csv
+import os
+import sys
 
 # Create your views here.
 @login_required
@@ -108,9 +112,7 @@ def certificados_evento(request, id):
         qtd_certificados = evento.participantes.all().count() - Certificado.objects.filter(evento = evento).count()
         return render(request, 'certificados_evento.html', {'qtd_certificados': qtd_certificados, 'evento': evento})
 
-from io import BytesIO
-from django.core.files.uploadedfile import InMemoryUploadedFile
-import sys
+
 
 def gerar_certificado(request, id):
     evento = get_object_or_404(Evento, id=id)
@@ -153,3 +155,17 @@ def gerar_certificado(request, id):
     
     messages.add_message(request, constants.SUCCESS, 'Certificados gerados com sucesso.')
     return redirect(reverse('certificados_evento', kwargs={'id':evento.id}))
+
+def procurar_certificado(request, id):
+    evento = get_object_or_404(Evento, id=id)
+    if not evento.criador == request.user:
+        raise Http404('Este evento não é seu.')
+
+    email = request.POST.get('email')
+
+    certificado = Certificado.objects.filter(evento = evento).filter(participante__email=email).first()
+    if not certificado:
+        messages.add_message(request, constants.ERROR, 'Este certificando ainda não foi gerado.')
+        return redirect(reverse('certificados_evento', kwargs={'id':evento.id}))
+    
+    return redirect(certificado.certificado.url)
