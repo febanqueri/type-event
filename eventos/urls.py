@@ -6,4 +6,5 @@ urlpatterns = [
     path('gerenciar_evento/', views.gerenciar_evento, name="gerencia_evento"),
     path('inscrever_evento/<int:id>/', views.inscrever_evento, name="inscrever_evento"),
     path('participantes_eventos/<int:id>/', views.participantes_eventos, name='participantes_eventos'),
+    path('gerar_csv/<int:id>/', views.gerar_csv, name="gerar_csv"),
 ]
